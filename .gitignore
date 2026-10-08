@@ -1,0 +1,7 @@
+manifest_split.csv
+
+dataset/
+outputs/
+figures/
+
+src/__pycache__/

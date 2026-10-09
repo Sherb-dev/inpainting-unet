@@ -10,25 +10,10 @@ class Config:
     # -- TEST ---
     DATA_DIR = None
 
-    # --- Dataset 1 ---
-    CSV_PATH = f"{BASE_DIR}/dataset/COCO/dataset.csv"
-    ORIG_DIR = f"{BASE_DIR}/dataset/COCO/0" # Originali
-    MANIP_DIR = f"{BASE_DIR}/dataset/COCO/1" # Manipolate
-    MASK_DIR = f"{BASE_DIR}/dataset/COCO/masks"
-
-
-   # --- Dataset 2 --- NONE sul csv path per non utilizzarlo
-    DS2_CSV_PATH  = f"{BASE_DIR}/dataset/Bagel/dataset.csv"
-    DS2_ORIG_DIR  = f"{BASE_DIR}/dataset/Bagel/0" # Originali
-    DS2_MANIP_DIR = f"{BASE_DIR}/dataset/Bagel/1" # Manipolate
-    DS2_MASK_DIR  = f"{BASE_DIR}/dataset/Bagel/masks"
-
-
     # --- Percorsi output ---
     MANIFEST_OUT = f"/{BASE_DIR}/dataset/manifest_split.csv"
     CHECKPOINT_DIR = f"{BASE_DIR}/outputs/checkpoints"
     FIGURES_DIR = f"{BASE_DIR}/outputs/figures"
-
 
     # --- Undersampling ----
     # None per non eseguirlo, il seed di sampling utilizzato è su varie
@@ -36,8 +21,8 @@ class Config:
 
 
     # --- Split ---
-    TRAIN_FRAC = 0.70
-    VAL_FRAC = 0.20
+    TRAIN_FRAC = 0.80
+    VAL_FRAC = 0.10
     TEST_FRAC = 0.10
 
 
@@ -47,7 +32,7 @@ class Config:
 
     # --- Training ---
     BATCH_SIZE = 16
-    EPOCHS = 60
+    EPOCHS = 120
     LR = 1e-4 # LR iniziale
     BASE_CHANNELS = 64
     NUM_WORKERS = 0
@@ -58,7 +43,7 @@ class Config:
     ES_MIN_DELTA = 1e-3 # miglioramento minimo considerato significativo
 
 
-    # --- Postprocessing ---
+    # --- Post-processing ---
     SEG_THRESHOLD = 0.15 # Threshold di segmentazione, usato per la IoU
     CLS_THRESHOLD = 0.5 # Threshold di classificazione binaria 0.5
 

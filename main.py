@@ -14,7 +14,7 @@ from src.config import Config
 from src.trainer import Trainer
 from src.unet import AttentionUNet, PlainUNet
 from src.evaluator import Evaluator
-from src.dataset_builder import MergedDatasetSplitter
+from dataset_builder_test import MergedDatasetSplitter
 from src.preprocessing import JointTransform, InpaintingDataset
  
  

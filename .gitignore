@@ -1,7 +1,8 @@
 manifest_split.csv
-
+.vscode/
 dataset/
 outputs/
 figures/
 
 src/__pycache__/
+src/dataset_builder_original.py

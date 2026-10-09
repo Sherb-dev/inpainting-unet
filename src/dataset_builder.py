@@ -12,8 +12,13 @@ from src.config import Config
 class Dataset:
     def __init__(self, original_images_path:str, manip_images_path:str, mask_path_list:str):
         self.original_images_path = original_images_path
-        self.manip_images_path = manip_images_path,
+        self.manip_images_path = manip_images_path
         self.mask_path_list = mask_path_list
+
+    def __iter__(self):
+        yield self.original_images_path
+        yield self.manip_images_path
+        yield self.mask_path_list
 
 
 class DatasetBuilder:
@@ -24,14 +29,10 @@ class DatasetBuilder:
     """
     def __init__(
         self,
-        original_images_path_list: list[str],
-        manip_images_path_list: list[str],
-        mask_path_list: list[str],
+        datasets: list[Dataset],
         cfg: Config,
     ):
-        self._original_images_path_list = original_images_path_list
-        self._manip_images_path_list = manip_images_path_list
-        self._mask_path_list = mask_path_list
+        self._dataset = datasets
         self._cfg = cfg
 
     def _get_mask_info(self, file_name: str, masks_path: str, mask_extension: str):
@@ -123,24 +124,24 @@ class DatasetBuilder:
         return pd.DataFrame(rows)
 
     def _build_dataset(self) -> pd.DataFrame:
-        datasets_list = []
-        totale = len(self._original_images_path_list)
+        manifests_list = []
+        # Corretto l'accesso alla variabile: si usa la lunghezza della lista dei Dataset passata nell'init
+        totale = len(self._dataset)
 
-        for i, (orig, manip, mask) in enumerate(
-            zip(self._original_images_path_list, self._manip_images_path_list, self._mask_path_list),
-            start=1,
-        ):
+        # Corretto l'iteratore: iteriamo direttamente su self._dataset 
+        # sfruttando la funzione generatrice __iter__ definita nella classe Dataset
+        for i, (orig, manip, mask) in enumerate(self._dataset, start=1):
             print(f"+ [{i}/{totale}] Processo {Path(orig).name}")
             dataset = self._pre_build_dataset(
                 dataset_original_path=orig,
                 dataset_manip_path=manip,
                 dataset_masks_path=mask,
             )
-            datasets_list.append(dataset)
+            manifests_list.append(dataset)
 
         manifest = self._init_manifest()
-        if datasets_list:
-            manifest = pd.concat([manifest] + datasets_list, ignore_index=True)
+        if manifests_list:
+            manifest = pd.concat([manifest] + manifests_list, ignore_index=True)
 
         return manifest
 

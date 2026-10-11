@@ -4,6 +4,8 @@ import torch.nn as nn
 import torchvision.transforms.functional as TF
 from sklearn.metrics import accuracy_score, roc_curve, auc
 from torch.utils.data import DataLoader
+
+from scipy import ndimage as ndi # per il post-processing morfologico
  
 from src.config import Config
  
@@ -104,7 +106,32 @@ class Evaluator:
         if metric.startswith("bbox_"):
             return self._bbox_metrics(pred_binary, gt)[metric]
         return self._segmentation_metrics(pred_binary, gt)[metric]
-   
+
+
+    def _postprocess_mask(self, binary_mask: np.ndarray,
+                            close_size: int = 7,
+                            min_area: int = 200) -> np.ndarray:
+            """
+            binary_mask: array [H, W] con valori {0,1}.
+            1. Closing: unisce i frammenti vicini in un'unica regione.
+            2. Fill holes: riempie i buchi interni.
+            3. Rimozione componenti connesse con area < min_area (rumore sparso).
+            """
+            m = binary_mask.astype(bool)
+            if not m.any():
+                return binary_mask.astype(np.float32)
+
+            struct = np.ones((close_size, close_size), dtype=bool)
+            m = ndi.binary_closing(m, structure=struct)
+            m = ndi.binary_fill_holes(m)
+
+            labeled, n = ndi.label(m)
+            if n > 0:
+                areas = ndi.sum(m, labeled, index=range(1, n + 1))
+                keep = np.isin(labeled, [i + 1 for i, a in enumerate(areas) if a >= min_area])
+                m = keep
+
+            return m.astype(np.float32)
  
     #questa funzione non viene chiamata in nessun punto del codice, la chiamiamo manualmente prima di lanciare l'addestramento per poi impostare la soglia adatta in config.py
     def find_best_threshold(self, val_loader: DataLoader, metric: str = "f1") -> tuple[float, float]:
@@ -148,7 +175,7 @@ class Evaluator:
         return best_threshold, best_score
  
    
-    def evaluate(self, test_loader: DataLoader) -> dict:
+    def evaluate(self, test_loader: DataLoader, postprocess:bool=False) -> dict:
         all_iou, all_f1, all_prec, all_rec = [], [], [], []
         all_bbox_iou, all_bbox_f1, all_bbox_prec, all_bbox_rec = [], [], [], []
         all_bbox_iou, all_bbox_f1, all_bbox_prec, all_bbox_rec = [], [], [], []
@@ -204,3 +231,53 @@ class Evaluator:
             "labels": all_labels,
             "scores": all_scores,
         }
+
+    def evaluate_beta(self, test_loader: DataLoader) -> dict:
+        keys = ("iou", "f1", "precision", "recall")
+        raw = {k: [] for k in keys}   # senza post-processing
+        pp  = {k: [] for k in keys}   # con post-processing
+        all_labels, all_scores = [], []
+
+        for image, mask, label in test_loader:
+            prob_mask, binary_mask, cls_score = self.predict(image)
+
+            for i in range(image.size(0)):
+                if label[i].item() == 1.0:  # metriche di segmentazione solo su manipolate
+                    gt = mask[i].cpu().numpy()          # [1,H,W]
+                    bm = binary_mask[i].cpu().numpy()   # [1,H,W]
+
+                    m = self._segmentation_metrics(bm, gt)
+                    for k in keys:
+                        raw[k].append(m[k])
+
+                    if self.cfg.MORPHOLOGICAL_POSTPROCESS:
+                        bm_pp = self._postprocess_mask(bm[0], self.cfg.CLOSE_SIZE, self.cfg.MIN_AREA)[None]
+                        m_pp = self._segmentation_metrics(bm_pp, gt)
+                        for k in keys:
+                            pp[k].append(m_pp[k])
+
+            all_labels.extend(label.numpy().tolist())
+            all_scores.extend(cls_score.cpu().numpy().tolist())
+
+        fpr, tpr, _ = roc_curve(all_labels, all_scores)
+        roc_auc = auc(fpr, tpr)
+        preds = [1 if s > self.threshold else 0 for s in all_scores]
+        accuracy = accuracy_score(all_labels, preds)
+
+        # Le chiavi "mean_*" contengono la versione finale (con PP se attivo),
+        # così Utils.save_metrics_to_csv e plot_metrics funzionano senza modifiche.
+        final = pp if self.cfg.MORPHOLOGICAL_POSTPROCESS else raw
+        results = {
+            "mean_iou":       float(np.mean(final["iou"])),
+            "mean_f1":        float(np.mean(final["f1"])),
+            "mean_precision": float(np.mean(final["precision"])),
+            "mean_recall":    float(np.mean(final["recall"])),
+            "accuracy":       float(accuracy),
+            "roc_auc":        float(roc_auc),
+            "fpr": fpr, "tpr": tpr,
+            "labels": all_labels, "scores": all_scores,
+        }
+        if self.cfg.MORPHOLOGICAL_POSTPROCESS:
+            for k in keys:
+                results[f"raw_mean_{k}"] = float(np.mean(raw[k]))
+        return results

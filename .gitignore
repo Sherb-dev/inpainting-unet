@@ -1,9 +1,8 @@
 manifest_split.csv
 .vscode/
+altro/
 dataset/
 outputs/
 figures/
 
 src/__pycache__/
-src/dataset_builder_original.py
-src/dataset_builder_gemini.py

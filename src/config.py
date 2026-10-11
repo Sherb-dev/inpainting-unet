@@ -3,7 +3,9 @@
 # ==============================================================================
 import torch
 from pathlib import Path
+from dataclasses import dataclass, field
 
+@dataclass
 class Config:
     BASE_DIR = Path(__file__).resolve().parent.parent # punta all directory base
 
@@ -17,7 +19,7 @@ class Config:
 
     # --- Undersampling ----
     # None per non eseguirlo, il seed di sampling utilizzato è su varie
-    DATASET_SIZE = 4000
+    DATASET_SIZE = None
 
 
     # --- Split ---
@@ -44,15 +46,24 @@ class Config:
 
 
     # --- Post-processing ---
+    # + THRESHOLD
     SEG_THRESHOLD = 0.15 # Threshold di segmentazione, usato per la IoU
     CLS_THRESHOLD = 0.5 # Threshold di classificazione binaria 0.5
+
+    # + MORFOLOGICO
+    MORPHOLOGICAL_POSTPROCESS = False
+    CLOSE_SIZE = 7
+    MIN_AREA = 200
+    # # # # # # # # # # # # # # 
 
 
     # --- Varie ---
     SEED = 42 # Influenza tutto ciò che ha bisogno di un seed
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+    # # # # # # # # 
 
-    def set_new_data(self, new_data_dir, csv_name):
+    # METODI INCAPSULATI
+    def set_new_data(self, new_data_dir:str, csv_name:str):
         import os
         self.DATA_DIR = new_data_dir
         self.CSV_PATH = os.path.join(new_data_dir, csv_name)
@@ -60,18 +71,3 @@ class Config:
     def debug_paths(self):
         print(self.DATA_DIR)
         print(self.CSV_PATH)
-
-    def set_undersampling(self, limit):
-        self.DATASET_SIZE = limit
-
-    def set_num_workers(self, num_workers):
-        self.NUM_WORKERS = num_workers
-
-    def set_training(self, batch_size, epochs, lr):
-        # --- Training ---
-        self.BATCH_SIZE = batch_size
-        self.EPOCHS = epochs
-        self.LR = lr
-
-    def set_new_checkpoint(self, new_ckpt_path: str):
-        self.CHECKPOINT_DIR = new_ckpt_path

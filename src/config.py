@@ -51,7 +51,6 @@ class Config:
     CLS_THRESHOLD = 0.5 # Threshold di classificazione binaria 0.5
 
     # + MORFOLOGICO
-    MORPHOLOGICAL_POSTPROCESS = False
     CLOSE_SIZE = 7
     MIN_AREA = 200
     # # # # # # # # # # # # # # 

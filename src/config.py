@@ -30,18 +30,21 @@ class Config:
 
     # --- Preprocessing ---
     IMAGE_SIZE = 256
+    CACHE_DIR = f"{BASE_DIR}/dataset/cache_{IMAGE_SIZE}"   # NUOVO
 
 
     # --- Training ---
     BATCH_SIZE = 16
-    EPOCHS = 120
-    LR = 1e-4 # LR iniziale
+    EPOCHS = 30            # era 60
+    LR = 1e-4
     BASE_CHANNELS = 64
-    NUM_WORKERS = 0
+    NUM_WORKERS = 4        # era 0 (con due processi in parallelo, controlla nproc)
+    WARMUP_EPOCHS = 3      # NUOVO
+    USE_AMP = True         # NUOVO
     
 
     # --- Early Stopping ---
-    ES_PATIENCE  = 14    # usiamo un numeri alti in quanto con il cosine il lr scende lentamente
+    ES_PATIENCE  = 7    # usiamo un numeri alti in quanto con il cosine il lr scende lentamente
     ES_MIN_DELTA = 1e-3 # miglioramento minimo considerato significativo
 
 

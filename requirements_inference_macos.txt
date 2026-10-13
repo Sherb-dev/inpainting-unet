@@ -1,0 +1,27 @@
+# Deep Learning (PyTorch nativo per macOS con supporto Metal/MPS)
+torch==2.5.1
+torchvision==0.20.1
+torchaudio==2.5.1
+
+# Calcolo numerico e Data Science
+numpy==2.4.6
+pandas==3.0.5
+scipy==1.17.1
+scikit-learn==1.9.0
+
+# Elaborazione immagini / CV
+opencv-python==5.0.0.93
+pillow==12.3.0
+
+# Visualizzazione e Progress Bar
+matplotlib==3.11.1
+tqdm==4.70.0
+
+# Utility & Download (se scarichi pesi/dataset)
+requests==2.34.2
+python-dotenv==1.2.4
+# kaggle==2.2.4
+# gdown==6.2.0
+
+# Notebook (opzionale, solo se esegui file .ipynb)
+ipykernel==7.3.0

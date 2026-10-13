@@ -16,7 +16,10 @@ from src.unet import AttentionUNet, PlainUNet
 from src.evaluator import Evaluator
 from dataset_builder_test import MergedDatasetSplitter
 from src.preprocessing import JointTransform, InpaintingDataset
- 
+
+import sys
+import pandas as pd
+torch.backends.cudnn.benchmark = True
  
 """
     ====================================================================================
@@ -43,7 +46,7 @@ def main(model_name, model_fn):
     model = model_fn() #istanziamo qui il modello, dopo set_seed (importante per la riproducibilità)
  
     # creiamo il manifest del dataset
-    manifest = MergedDatasetSplitter(cfg).run() #split del dataset e creazione del manifest
+    manifest = pd.read_csv(cfg.MANIFEST_OUT) # il manifest viene generato da build_cache.py
  
     # trasformiamo le liste in oggetti dataset, ridimensioniamo immagini e maschere e nel caso di train=True facciamo data augmentation
     train_ds = InpaintingDataset(manifest, "train", JointTransform(cfg.IMAGE_SIZE, train=True))

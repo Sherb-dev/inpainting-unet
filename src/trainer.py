@@ -44,24 +44,25 @@ class Trainer:
         self.model = model.to(cfg.DEVICE)
         self.cfg = cfg
         self.model_name = model_name
+        self.scaler = torch.amp.GradScaler("cuda", enabled=cfg.DEVICE == "cuda") # CLAUDE
 
         self.optimizer = optim.AdamW(
             self.model.parameters(), lr=cfg.LR, weight_decay=1e-4
         ) # usiamo l'ottimizzatore Adam weight decay, che penalizza i pesi troppo grandi per evitare l'overfitting
 
         # usiamo un doppio scheduler per modificare il learning rate durante l'addestramento
+        W = cfg.WARMUP_EPOCHS
         self.scheduler = optim.lr_scheduler.SequentialLR(
             self.optimizer,
             schedulers=[
-                optim.lr_scheduler.LinearLR(
-                    self.optimizer, start_factor=0.1, end_factor=1.0, total_iters=5
-                ), # primo scheduler di warmup con lr che aumenta gradualmente
-                optim.lr_scheduler.CosineAnnealingLR(
-                    self.optimizer, T_max=cfg.EPOCHS - 5, eta_min=1e-6
-                ), # dalla quinta epoca in poi il lr diminuisce gradualmente seguendo la curva del coseno per evitare sbalzi del gradiente
+                optim.lr_scheduler.LinearLR(self.optimizer, start_factor=0.1, end_factor=1.0, total_iters=W),
+                optim.lr_scheduler.CosineAnnealingLR(self.optimizer, T_max=cfg.EPOCHS - W, eta_min=1e-6),
             ],
-            milestones=[5]
+            milestones=[W]
         )
+
+        self.use_amp = cfg.USE_AMP and str(cfg.DEVICE).startswith("cuda")
+        self.scaler = torch.amp.GradScaler("cuda", enabled=self.use_amp)
 
         # early stopping
         self.early_stopping = EarlyStopping(
@@ -72,30 +73,30 @@ class Trainer:
         self.history = {"train_loss": [], "val_loss": []}
         self.best_val_loss = float("inf")
 
-    def _run_epoch(self, loader: DataLoader, train, desc):
+    def _run_epoch(self, loader: DataLoader, train, desc):        
         self.model.train() if train else self.model.eval() # modalita
         total_loss = 0.0
 
         context = torch.enable_grad() if train else torch.no_grad() # aggiorniamo i pesi (gradienti attivi) solo se train=True
         with context:
-            for image, mask, label in tqdm(loader, desc=desc, mininterval=10.0): # il loader fornisce un batch alla volta
-                # trasferiamo le immagini dalla cpu alla gpu
-                image = image.to(self.cfg.DEVICE)
-                mask  = mask.to(self.cfg.DEVICE)
-                label = label.to(self.cfg.DEVICE)
+            for image, mask, label in tqdm(loader, desc=desc, mininterval=10.0):
+                image = image.to(self.cfg.DEVICE, non_blocking=True)
+                mask  = mask.to(self.cfg.DEVICE, non_blocking=True)
+                label = label.to(self.cfg.DEVICE, non_blocking=True)
 
                 if train:
-                    self.optimizer.zero_grad() # per ogni batch ripuliamo i gradienti per evitare che si sommino
+                    self.optimizer.zero_grad(set_to_none=True)
 
-                seg_logits, cls_logits = self.model(image) # output di segmentazione e classificazione della rete
-                loss = combined_loss(seg_logits, mask, cls_logits, label) # calcoliamo la loss sul batch
+                with torch.autocast("cuda", dtype=torch.float16, enabled=self.use_amp):
+                    seg_logits, cls_logits = self.model(image)
+                # loss in float32: Dice e BCE sono sensibili alla precisione
+                loss = combined_loss(seg_logits.float(), mask, cls_logits.float(), label)
 
-                # backpropagation
                 if train:
-                    loss.backward()
-                    self.optimizer.step()
+                    self.scaler.scale(loss).backward()
+                    self.scaler.step(self.optimizer)
+                    self.scaler.update()
 
-                # loss totale del batch corrente
                 total_loss += loss.item() * image.size(0)
 
         return total_loss / len(loader.dataset) # restituisce l'errore medio dell'epoca

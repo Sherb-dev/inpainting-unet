@@ -59,6 +59,7 @@ class InpaintingDataset(Dataset):
     def __init__(self, manifest_df, split, transform: JointTransform):
         self.rows = manifest_df[manifest_df["split"] == split].reset_index(drop=True) #manteniamo solo lo split che ci interessa e riscriviamo gli indici
         self.transform = transform
+        self.cache_dir = cache_dir   
 
     def __len__(self):
         return len(self.rows) * 2 #perchè per ogni immagine abbiamo sia la versione originale che quella manipolata
@@ -67,8 +68,18 @@ class InpaintingDataset(Dataset):
         row = self.rows.iloc[idx // 2] #recuperiamo l'indice
         is_manipulated = (idx % 2 == 1) #se è dispari corrisponde a un'immagine manipolata, se è pari a una originale
 
-        if is_manipulated:
-            #se è manipolata apre direttamente il file
+        if self.cache_dir:                                                               # NUOVO blocco
+            iid = row["image_id"]
+            if is_manipulated:
+                image = Image.open(f"{self.cache_dir}/{iid}_manip.png").convert("RGB")
+                mask = Image.open(f"{self.cache_dir}/{iid}_mask.png").convert("L")
+                label = 1.0
+            else:
+                image = Image.open(f"{self.cache_dir}/{iid}_orig.png").convert("RGB")
+                mask = Image.new("L", image.size, 0)
+                label = 0.0
+        elif is_manipulated:
+            # se è manipolata apre direttamente il file
             image = Image.open(row["manip_path"]).convert("RGB")
             
             ext = os.path.splitext(row["mask_path"])[1]

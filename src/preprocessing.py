@@ -56,10 +56,10 @@ class JointTransform:
 
 #usiamo questa classe per recuperare i file dal disco quando sono necessari, partendo dal manifest
 class InpaintingDataset(Dataset):
-    def __init__(self, manifest_df, split, transform: JointTransform):
-        self.rows = manifest_df[manifest_df["split"] == split].reset_index(drop=True) #manteniamo solo lo split che ci interessa e riscriviamo gli indici
+    def __init__(self, manifest_df, split, transform: JointTransform, cache_dir=None):
+        self.rows = manifest_df[manifest_df["split"] == split].reset_index(drop=True)
         self.transform = transform
-        self.cache_dir = cache_dir   
+        self.cache_dir = cache_dir 
 
     def __len__(self):
         return len(self.rows) * 2 #perchè per ogni immagine abbiamo sia la versione originale che quella manipolata

@@ -8,6 +8,8 @@ import torchvision.transforms.functional as TF
 
 from src.config import Config
 from src.dataset_builder import MergedDatasetSplitter
+from pathlib import Path
+from src.dataset_builder import Dataset, DatasetBuilder   # al posto di MergedDatasetSplitter
 
 SIZE, CACHE = Config.IMAGE_SIZE, Config.CACHE_DIR
 
@@ -37,12 +39,17 @@ def _process(row):
     _save(mask, p["mask"], N)
     return 1
 
-
 if __name__ == "__main__":
     cfg = Config()
-    manifest = MergedDatasetSplitter(cfg).run()     # scrive manifest_split.csv
+    root = cfg.BASE_DIR / "dataset"
+    datasets = [
+        # (originali, manipolate [con dataset.csv], maschere): ADATTA I PERCORSI ALLA TUA STRUTTURA
+        Dataset(str(root / "ds1" / "0"), str(root / "ds1" / "1"), str(root / "ds1" / "masks")),
+        Dataset(str(root / "ds2" / "0"), str(root / "ds2" / "1"), str(root / "ds2" / "masks")),
+    ]
+    manifest = DatasetBuilder(datasets, cfg).run()          # scrive manifest_split.csv
     os.makedirs(CACHE, exist_ok=True)
     rows = manifest.to_dict("records")
-    with Pool(os.cpu_count() // 2) as pool:
+    with Pool(max(1, os.cpu_count() // 2)) as pool:
         done = list(tqdm(pool.imap_unordered(_process, rows, chunksize=32), total=len(rows)))
     print(f"Cache pronta: {sum(done)} nuove coppie, {len(rows) - sum(done)} già presenti.")

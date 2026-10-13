@@ -5,9 +5,9 @@ import numpy as np
 from PIL import Image
 from tqdm import tqdm
 import torchvision.transforms.functional as TF
+import cv2
 
 from src.config import Config
-from src.dataset_builder import MergedDatasetSplitter
 from pathlib import Path
 from src.dataset_builder import Dataset, DatasetBuilder   # al posto di MergedDatasetSplitter
 
@@ -20,6 +20,18 @@ def _save(img, path, interp):
     img.save(tmp, format="PNG")      # PNG lossless, mai JPEG
     os.replace(tmp, path)            # scrittura atomica
 
+# Stessa identica funzione implementata durante l'inpainting
+def _mask_border(maschera_binaria: np.array, dilatation_factor: float):
+    # calcolo il margine come il 1% della dimensione maggiore dell'immagine
+    altezza, larghezza = maschera_binaria.shape
+    dimensione_riferimento = max(altezza, larghezza)
+    margine = int(dimensione_riferimento * dilatation_factor) # in teoria 0.01 per bagel e 0.03 per il resto
+
+    # Importante -> deve essere dispari e almeno 3x3
+    kernel_size = max(3, (margine * 2) + 1)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_size, kernel_size))
+    new_maschera_binaria = cv2.dilate(maschera_binaria, kernel, iterations=1)
+    return new_maschera_binaria
 
 def _process(row):
     iid = row["image_id"]
@@ -33,7 +45,7 @@ def _process(row):
 
     # stessa conversione che fa oggi InpaintingDataset
     if os.path.splitext(row["mask_path"])[1] == ".npy":
-        mask = Image.fromarray((np.load(row["mask_path"]) * 255).astype(np.uint8)).convert("L")
+        mask = Image.fromarray((np.load(_mask_border(row["mask_path"], row["dilatation_factor"])) * 255).astype(np.uint8)).convert("L")
     else:
         mask = Image.open(row["mask_path"]).convert("L")
     _save(mask, p["mask"], N)
@@ -42,12 +54,10 @@ def _process(row):
 if __name__ == "__main__":
     cfg = Config()
     root = cfg.BASE_DIR / "dataset"
-    datasets = [
-        # (originali, manipolate [con dataset.csv], maschere): ADATTA I PERCORSI ALLA TUA STRUTTURA
-        Dataset(str(root / "ds1" / "0"), str(root / "ds1" / "1"), str(root / "ds1" / "masks")),
-        Dataset(str(root / "ds2" / "0"), str(root / "ds2" / "1"), str(root / "ds2" / "masks")),
-    ]
-    manifest = DatasetBuilder(datasets, cfg).run()          # scrive manifest_split.csv
+ 
+    datasets = []
+    
+    manifest = DatasetBuilder(datasets, cfg).run() # crea manifest_split.csv
     os.makedirs(CACHE, exist_ok=True)
     rows = manifest.to_dict("records")
     with Pool(max(1, os.cpu_count() // 2)) as pool:

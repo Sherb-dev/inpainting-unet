@@ -267,7 +267,7 @@ class Evaluator:
         accuracy = accuracy_score(all_labels, preds)
 
         return {
-            "postprocess": postprocess,
+            "postprocess": use_pp,
             "mean_iou": float(np.mean(all_iou)),
             "mean_f1": float(np.mean(all_f1)),
             "mean_precision": float(np.mean(all_prec)),

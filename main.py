@@ -48,9 +48,9 @@ def main(model_name, model_fn):
     manifest = pd.read_csv(cfg.MANIFEST_OUT) # il manifest viene generato da build_cache.py
  
     # trasformiamo le liste in oggetti dataset, ridimensioniamo immagini e maschere e nel caso di train=True facciamo data augmentation
-    train_ds = InpaintingDataset(manifest, "train", JointTransform(cfg.IMAGE_SIZE, train=True))
-    val_ds = InpaintingDataset(manifest, "val", JointTransform(cfg.IMAGE_SIZE, train=False))
-    test_ds = InpaintingDataset(manifest, "test", JointTransform(cfg.IMAGE_SIZE, train=False))
+    train_ds = InpaintingDataset(manifest, "train", JointTransform(cfg.IMAGE_SIZE, train=True), cache_dir=cfg.CACHE_DIR)
+    val_ds = InpaintingDataset(manifest, "val", JointTransform(cfg.IMAGE_SIZE, train=False), cache_dir=cfg.CACHE_DIR)
+    test_ds = InpaintingDataset(manifest, "test", JointTransform(cfg.IMAGE_SIZE, train=False), cache_dir=cfg.CACHE_DIR)
  
     # suddivisione in batch con shuffle solo nel training set
     train_loader = DataLoader(train_ds, batch_size=cfg.BATCH_SIZE, shuffle=True, num_workers=cfg.NUM_WORKERS)

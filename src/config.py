@@ -13,7 +13,7 @@ class Config:
     DATA_DIR = None
 
     # --- Percorsi output ---
-    MANIFEST_OUT = f"/{BASE_DIR}/dataset/manifest_split.csv"
+    MANIFEST_OUT = f"{BASE_DIR}/dataset/manifest_split.csv"
     CHECKPOINT_DIR = f"{BASE_DIR}/outputs/checkpoints"
     FIGURES_DIR = f"{BASE_DIR}/outputs/figures"
 

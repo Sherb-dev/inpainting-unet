@@ -44,7 +44,6 @@ class Trainer:
         self.model = model.to(cfg.DEVICE)
         self.cfg = cfg
         self.model_name = model_name
-        self.scaler = torch.amp.GradScaler("cuda", enabled=cfg.DEVICE == "cuda") # CLAUDE
 
         self.optimizer = optim.AdamW(
             self.model.parameters(), lr=cfg.LR, weight_decay=1e-4

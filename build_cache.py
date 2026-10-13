@@ -20,7 +20,7 @@ def _save(img, path, interp):
     img.save(tmp, format="PNG")      # PNG lossless, mai JPEG
     os.replace(tmp, path)            # scrittura atomica
 
-# Stessa identica funzione implementata durante l'inpainting
+# Stessa identica funzione implementata durante l'inpainting 
 def _mask_border(maschera_binaria: np.array, dilatation_factor: float):
     # calcolo il margine come il 1% della dimensione maggiore dell'immagine
     altezza, larghezza = maschera_binaria.shape
@@ -45,7 +45,8 @@ def _process(row):
 
     # stessa conversione che fa oggi InpaintingDataset
     if os.path.splitext(row["mask_path"])[1] == ".npy":
-        mask = Image.fromarray((np.load(_mask_border(row["mask_path"], row["dilatation_factor"])) * 255).astype(np.uint8)).convert("L")
+        mask_dil = _mask_border(np.load(row["mask_path"]), row["dilatation_factor"])
+        mask = Image.fromarray((mask_dil * 255).astype(np.uint8)).convert("L")
     else:
         mask = Image.open(row["mask_path"]).convert("L")
     _save(mask, p["mask"], N)

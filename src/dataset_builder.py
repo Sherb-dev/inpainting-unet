@@ -118,7 +118,7 @@ class DatasetBuilder:
                 "target_prompt": r.get("prompt", ""),
                 "source": source_name,
                 "mask_type": mask_extension,
-                "dilatation_factor": r["dilatation_factor"] # edited
+                "dilatation_factor": r.get("dilatation_factor", 0.03) # edited
             })
 
         self._report_missing(missing, source_name)

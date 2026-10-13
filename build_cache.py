@@ -45,7 +45,7 @@ def _process(row):
 
     # stessa conversione che fa oggi InpaintingDataset
     if os.path.splitext(row["mask_path"])[1] == ".npy":
-        mask_dil = _mask_border(np.load(row["mask_path"]), row["dilatation_factor"])
+        mask_dil = _mask_border(np.load(row["mask_path"]), row.get("dilatation_factor", 0.03))
         mask = Image.fromarray((mask_dil * 255).astype(np.uint8)).convert("L")
     else:
         mask = Image.open(row["mask_path"]).convert("L")

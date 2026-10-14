@@ -70,6 +70,6 @@ class Config:
         self.DATA_DIR = new_data_dir
         self.CSV_PATH = os.path.join(new_data_dir, csv_name)
 
-    def debug_paths(self):
+    def print_paths(self):
         print(self.DATA_DIR)
         print(self.CSV_PATH)

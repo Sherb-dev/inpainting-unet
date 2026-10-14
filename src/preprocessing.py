@@ -14,7 +14,7 @@ class JointTransform:
         self.size = size
         self.train = train
 
-    def __call__(self, image: Image.Image, mask: Image.Image):
+    def __call__(self, image: Image.Image, mask: Image.Image, disable_compression_test:bool = False):
         # 1. Resize iniziale
         image = TF.resize(image, (self.size, self.size), interpolation=TF.InterpolationMode.BILINEAR)
         mask  = TF.resize(mask,  (self.size, self.size), interpolation=TF.InterpolationMode.NEAREST)
@@ -29,7 +29,7 @@ class JointTransform:
                 mask  = TF.vflip(mask)
 
             # Simulazione perdita di risoluzione / compressione (SOLO sull'immagine)
-            if random.random() > 0.5:
+            if random.random() > 0.5 and disable_compression_test == False:
                 small_size = self.size // 2
                 image = TF.resize(image, (small_size, small_size), interpolation=TF.InterpolationMode.BILINEAR)
                 image = TF.resize(image, (self.size, self.size), interpolation=TF.InterpolationMode.BILINEAR)
@@ -56,10 +56,12 @@ class JointTransform:
 
 #usiamo questa classe per recuperare i file dal disco quando sono necessari, partendo dal manifest
 class InpaintingDataset(Dataset):
-    def __init__(self, manifest_df, split, transform: JointTransform, cache_dir=None):
+    def __init__(self, manifest_df, split, transform: JointTransform, cache_dir=None, disable_compression_test:bool = False):
+        
         self.rows = manifest_df[manifest_df["split"] == split].reset_index(drop=True)
         self.transform = transform
         self.cache_dir = cache_dir 
+        self.disable_compression_test
 
     def __len__(self):
         return len(self.rows) * 2 #perchè per ogni immagine abbiamo sia la versione originale che quella manipolata
@@ -96,5 +98,5 @@ class InpaintingDataset(Dataset):
             mask = Image.new("L", image.size, 0)  # maschera nera generata al volo
             label = 0.0
 
-        image, mask = self.transform(image, mask) #passa l'immagine per il preprocessing e eventuale data augmentation
+        image, mask = self.transform(image, mask, self.disable_compression_test) #passa l'immagine per il preprocessing e eventuale data augmentation
         return image, mask, torch.tensor(label, dtype=torch.float32)

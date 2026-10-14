@@ -61,7 +61,7 @@ class InpaintingDataset(Dataset):
         self.rows = manifest_df[manifest_df["split"] == split].reset_index(drop=True)
         self.transform = transform
         self.cache_dir = cache_dir 
-        self.disable_compression_test
+        self.disable_compression_test = disable_compression_test
 
     def __len__(self):
         return len(self.rows) * 2 #perchè per ogni immagine abbiamo sia la versione originale che quella manipolata

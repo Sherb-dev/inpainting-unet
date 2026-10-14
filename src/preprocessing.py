@@ -10,11 +10,12 @@ from PIL import Image
 from torch.utils.data import Dataset
 
 class JointTransform:
-    def __init__(self, size, train=True):
+    def __init__(self, size, train=True, disable_compression_test:bool = False):
         self.size = size
         self.train = train
+        self.disable_compression_test = disable_compression_test
 
-    def __call__(self, image: Image.Image, mask: Image.Image, disable_compression_test:bool = False):
+    def __call__(self, image: Image.Image, mask: Image.Image):
         # 1. Resize iniziale
         image = TF.resize(image, (self.size, self.size), interpolation=TF.InterpolationMode.BILINEAR)
         mask  = TF.resize(mask,  (self.size, self.size), interpolation=TF.InterpolationMode.NEAREST)
@@ -29,7 +30,7 @@ class JointTransform:
                 mask  = TF.vflip(mask)
 
             # Simulazione perdita di risoluzione / compressione (SOLO sull'immagine)
-            if random.random() > 0.5 and disable_compression_test == False:
+            if random.random() > 0.5 and self.disable_compression_test == False:
                 small_size = self.size // 2
                 image = TF.resize(image, (small_size, small_size), interpolation=TF.InterpolationMode.BILINEAR)
                 image = TF.resize(image, (self.size, self.size), interpolation=TF.InterpolationMode.BILINEAR)

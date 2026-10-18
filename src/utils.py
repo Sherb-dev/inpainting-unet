@@ -952,7 +952,7 @@ class Utils:
 
     # definisce la funzione per visualizzare il triplo confronto (Originale grezza da disco, Maschera, Inpainted dal dataset)
     @staticmethod
-    def plot_esempi_inpainting(dataset, n_esempi=3, seed=42): #TODO cambiare seed
+    def plot_esempi_inpainting(dataset, n_esempi=3, seed=42, ): #TODO cambiare seed
         """
         Mostra un confronto affiancato per un numero variabile di esempi (n_esempi):
         - Immagine originale grezza (letta direttamente da disco, senza data augmentation)
@@ -1011,12 +1011,17 @@ class Utils:
         plt.show()
 
 
-
 # Visualizza alcune predizioni sul test set
 class AnalisiPredizioni:
     @staticmethod
     def compare_and_debug_errors(loaded_models, test_loader, cfg, n_errors=12, save_fig=False):
         # Estrae i due modelli e i loro nomi dalla lista passata
+
+        print("La funzione compare_and_debug_errors non inposta automaticamente i modelli in modalità eval(), assicurarsi che siano in modelità valutazione prima di passarli alla funzione")
+        c = str(input()).lower
+        if c != "y":
+            exit(0)
+
         model1, name1 = loaded_models[0]
         model2, name2 = loaded_models[1]
         
@@ -1115,7 +1120,7 @@ class AnalisiPredizioni:
 
    # Istogramma confidenza predizioni corrette vs errate
     @staticmethod
-    def plot_confidence_vs_errors(results, cfg, save_plot=False):
+    def plot_confidence_vs_errors(results, exp_name:str, cfg, save_plot=False):
         scores = np.array(results["scores"])
         labels = np.array(results["labels"])
         preds  = (scores > 0.5).astype(int)
@@ -1147,6 +1152,12 @@ class AnalisiPredizioni:
             ax.set_xlabel("cls_score")
             ax.set_ylabel("Frequenza")
             ax.set_title(f"{title}\n(n={len(group)})")
+
+        # === 1. INSERISCI QUI IL TITOLO PRINCIPALE ===
+        fig.suptitle(f"Distribuzione della Confidenza per Categoria di Errore {exp_name}", fontsize=16, fontweight="bold")
+
+        # === 2. AGGIUNGI rect ALLA TIGHT_LAYOUT PER NON SOVRAPPORLO ===
+        plt.tight_layout(rect=[0, 0, 1, 0.96])
 
         plt.tight_layout()
         if save_plot:
